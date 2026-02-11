@@ -158,26 +158,26 @@ app.get('/employees/test', async (req, res) => {
 */
 //http://localhost:8081/employee
 app.post('/employee', async (req, res) => {
-  
-    console.log(req.body)
-    const employee = new employeeModel(req.body);
-    
-    try {
-      await employee.save((err) => {
-        if(err){
-          //Custome error handling
-          //console.log(err.errors['firstname'].message)
-          //console.log(err.errors['lastname'].message)
-          //console.log(err.errors['gender'].message)
-          //console.log(err.errors['salary'].message)
-          res.send(err)
-        }else{
-          res.send(employee);
-        }
-      });
-    } catch (err) {
-      res.status(500).send(err);
+  console.log(req.body)
+  try {
+    const employee = await employeeModel.create(req.body);
+    res.status(201).send(employee);
+  } catch (err) {
+    console.error("Create employee error:", err);
+    if (err && err.code === 11000) {
+      return res.status(409).send({ status: false, message: "Email already exists", keyValue: err.keyValue });
     }
+    if (err && err.name === "ValidationError") {
+      const details = Object.values(err.errors).map((e) => e.message);
+      return res.status(400).send({ status: false, message: "Validation failed", details });
+    }
+    res.status(400).send({
+      status: false,
+      message: "Bad Request",
+      error: err && err.message ? err.message : "Unknown error",
+      name: err && err.name ? err.name : "UnknownError",
+    });
+  }
   });
 
 //Update Record
